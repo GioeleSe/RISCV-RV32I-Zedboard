@@ -1,0 +1,31 @@
+set_property SRC_FILE_INFO {cfile:C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/OLED_driver/OLED_driver.srcs/constrs_1/new/oled_buttons_mapping.xdc rfile:../../../OLED_driver.srcs/constrs_1/new/oled_buttons_mapping.xdc id:1} [current_design]
+set_property src_info {type:XDC file:1 line:4 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN Y9 [get_ports {clk}]
+set_property src_info {type:XDC file:1 line:10 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN U10  [get_ports {oled_dc}]
+set_property src_info {type:XDC file:1 line:11 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN U9   [get_ports {oled_res}]
+set_property src_info {type:XDC file:1 line:12 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN AB12 [get_ports {oled_sclk}]
+set_property src_info {type:XDC file:1 line:13 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN AA12 [get_ports {oled_sdin}]
+set_property src_info {type:XDC file:1 line:14 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN U11  [get_ports {oled_vbat}]
+set_property src_info {type:XDC file:1 line:15 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN U12  [get_ports {oled_vdd}]
+set_property src_info {type:XDC file:1 line:20 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN F22 [get_ports {rst}]        ; # Changed back to match VHDL 'rst'
+set_property src_info {type:XDC file:1 line:25 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN R16 [get_ports {btn_down}]   ; # "BTND"
+set_property src_info {type:XDC file:1 line:26 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN N15 [get_ports {btn_left}]   ; # "BTNL"
+set_property src_info {type:XDC file:1 line:27 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN R18 [get_ports {btn_right}]  ; # "BTNR"
+set_property src_info {type:XDC file:1 line:28 export:INPUT save:INPUT read:READ} [current_design]
+set_property PACKAGE_PIN T18 [get_ports {btn_up}]     ; # "BTNU"
+set_property src_info {type:XDC file:1 line:33 export:INPUT save:INPUT read:READ} [current_design]
+set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 13]]
+set_property src_info {type:XDC file:1 line:34 export:INPUT save:INPUT read:READ} [current_design]
+set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 34]]
+set_property src_info {type:XDC file:1 line:35 export:INPUT save:INPUT read:READ} [current_design]
+set_property IOSTANDARD LVCMOS25 [get_ports -of_objects [get_iobanks 35]]

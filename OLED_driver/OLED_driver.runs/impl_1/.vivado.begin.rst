@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="gioel" Host="GIOELES_TUF" Pid="11976" HostCore="12" HostMemory="033630187520">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="gioel" Host="GIOELES_TUF" Pid="3068" HostCore="12" HostMemory="033630187520">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="gioel" Host="GIOELES_TUF" Pid="25580" HostCore="12" HostMemory="033630187520">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="gioel" Host="GIOELES_TUF" Pid="18612" HostCore="12" HostMemory="033630187520">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="gioel" Host="GIOELES_TUF" Pid="8388" HostCore="12" HostMemory="033630187520">
+    </Process>
+</ProcessHandle>

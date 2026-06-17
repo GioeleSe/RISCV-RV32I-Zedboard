@@ -1,0 +1,11 @@
+INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/OLED_driver/OLED_driver.srcs/sources_1/new/ascii_rom.vhd" into library xil_defaultlib
+INFO: [VRFC 10-3107] analyzing entity 'ascii_rom'
+INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/OLED_driver/OLED_driver.srcs/sources_1/new/oled_delay.vhd" into library xil_defaultlib
+INFO: [VRFC 10-3107] analyzing entity 'oled_delay'
+INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/oled_example.vhd" into library xil_defaultlib
+INFO: [VRFC 10-3107] analyzing entity 'oled_example'
+INFO: [VRFC 10-163] Analyzing VHDL file "C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/oled_initializer.vhd" into library xil_defaultlib
+INFO: [VRFC 10-3107] analyzing entity 'oled_initializer'
+ERROR: [VRFC 10-2945] 'oled_spi' is not a component [C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/oled_initializer.vhd:92]
+ERROR: [VRFC 10-9458] unit 'behavioral' is ignored due to previous errors [C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/oled_initializer.vhd:26]
+INFO: [VRFC 10-8704] VHDL file 'C:/Users/gioel/Documents/unitn/2_anno_2_semestre/advanced_logic_design_passerone/RISCV_on_Zedboard/oled_initializer.vhd' is ignored due to errors
