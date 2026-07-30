@@ -1,8 +1,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
-
--- TODO - test the new control-flow blocks :)
+library work;
+use work.common.all;
 
 entity InstructionFetcher is
 port (
@@ -19,46 +19,80 @@ port (
 end entity InstructionFetcher;
 
 architecture behaviour of InstructionFetcher is
-    type bram_t is array (0 to 2047) of std_logic_vector(31 downto 0);
-    signal bram : bram_t := (
+    signal bram : BRAM_T := (
         -- =========================================================================
-        -- 1. INITIALIZATION & DATA HAZARD PADDING
+        -- HAZARD-SAFE BUTTON-TO-OLED POLLING PROGRAM (WITH DOUBLED NOPS)
         -- =========================================================================
-        0  => x"00500093", -- addi x1, x0, 5   (x1 = 5)
-        1  => x"00500113", -- addi x2, x0, 5   (x2 = 5)
-        2  => x"00300193", -- addi x3, x0, 3   (x3 = 3)
-        3  => x"00000000", -- nop              (Hazard padding for register writeback)
-        4  => x"00000000", -- nop              (Hazard padding for register writeback)
 
-        -- =========================================================================
-        -- 2. CONDITIONAL BRANCH TESTS (BR / BEQ)
-        -- =========================================================================
-        5  => x"00208463", -- beq  x1, x2, 8   (Branch taken: 5 == 5)
-        6  => x"00100213", -- addi x4, x0, 1   (SKIPPED)
-        7  => x"00200213", -- addi x4, x0, 2   (x4 = 2)
+        -- Initialization Phase (Executed once at startup)
+        0  => x"000F0537", -- lui  x10, 0x000F0       (Load MMIO base address 0x000F0000 into x10)
+        1  => x"00000000", -- nop                     (Hazard padding 1)
+        2  => x"00000000", -- nop                     (Hazard padding 2 - doubled)
+        3  => x"00000613", -- addi x12, x0, 0         (Initialize old button state cache x12 to 0)
+        4  => x"00000000", -- nop                     (Hazard padding 1)
+        5  => x"00000000", -- nop                     (Hazard padding 2 - doubled)
 
-        8  => x"01308463", -- beq  x1, x3, 8   (Branch NOT taken: 5 != 3, falls through)
-        9  => x"00300293", -- addi x5, x0, 3   (Intermediate step)
-        10 => x"00400293", -- addi x5, x0, 4   (x5 = 4)
+        -- Polling Loop Start
+        6  => x"00052583", -- lw   x11, 0(x10)        (Load current button state from 0x000F0000 into x11)
+        7  => x"00000000", -- nop                     (Load-use hazard padding 1)
+        8  => x"00000000", -- nop                     (Load-use hazard padding 2 - doubled)
+        
+        -- Compare current state (x11) with cached state (x12)
+        -- If equal, branch forward to index 12 to skip writing
+        9  => x"00CB0C63", -- beq  x11, x12, 12       (Branch if x11 == x12, offset = 12 bytes / 3 instructions forward)
+        10 => x"00000000", -- nop                     (Branch delay slot 1)
+        11 => x"00000000", -- nop                     (Branch delay slot 2 - doubled)
 
-        -- =========================================================================
-        -- 3. UNCONDITIONAL JUMP TEST (JAL)
-        -- =========================================================================
-        11 => x"00C0006F", -- jal  x0, 12      (Unconditional jump forward)
-        12 => x"00600313", -- addi x6, x0, 6   (SKIPPED)
-        13 => x"00700313", -- addi x6, x0, 7   (SKIPPED)
-        14 => x"00800313", -- addi x6, x0, 8   (x6 = 8)
+        -- Buttons Changed Phase
+        12 => x"00B52223", -- sw   x11, 4(x10)        (Store new button state to OLED command reg at 0x000F0004)
+        13 => x"00058613", -- addi x12, x11, 0        (Update old state cache: copy x11 into x12)
+        14 => x"00000000", -- nop                     (Hazard padding 1)
+        15 => x"00000000", -- nop                     (Hazard padding 2 - doubled)
 
-        -- =========================================================================
-        -- 4. REGISTER JUMP TEST (JALR)
-        -- =========================================================================
-        15 => x"04c00393", -- addi x7, x0, 76  (x7 = 76 -> targets byte address 76 / index 19)
-        16 => x"00000000", -- nop              (Hazard padding for x7 writeback)
-        17 => x"00038067", -- jalr x0, 0(x7)   (JALR with rd=x0; jumps to address 76)
-        18 => x"00000000", -- nop              (JALR delay slot / masked instruction)
-        19 => x"00900413", -- addi x8, x0, 9   (Jump destination: x8 = 9)
+        -- Loop Back Phase
+        16 => x"FD5FF0EF", -- jal  x0, -40            (Unconditional jump back to index 6 to continue polling)
+        17 => x"00000000", -- nop                     (JAL delay slot 1)
+        18 => x"00000000", -- nop                     (JAL delay slot 2 - doubled)
 
         others => (others => '0')
+        
+--        -- =========================================================================
+--        -- 1. INITIALIZATION & DATA HAZARD PADDING
+--        -- =========================================================================
+--        0  => x"00500093", -- addi x1, x0, 5   (x1 = 5)
+--        1  => x"00500113", -- addi x2, x0, 5   (x2 = 5)
+--        2  => x"00300193", -- addi x3, x0, 3   (x3 = 3)
+--        3  => x"00000000", -- nop              (Hazard padding for register writeback)
+--        4  => x"00000000", -- nop              (Hazard padding for register writeback)
+
+--        -- =========================================================================
+--        -- 2. CONDITIONAL BRANCH TESTS (BR / BEQ)
+--        -- =========================================================================
+--        5  => x"00208463", -- beq  x1, x2, 8   (Branch taken: 5 == 5)
+--        6  => x"00100213", -- addi x4, x0, 1   (SKIPPED)
+--        7  => x"00200213", -- addi x4, x0, 2   (x4 = 2)
+
+--        8  => x"01308463", -- beq  x1, x3, 8   (Branch NOT taken: 5 != 3, falls through)
+--        9  => x"00300293", -- addi x5, x0, 3   (Intermediate step)
+--        10 => x"00400293", -- addi x5, x0, 4   (x5 = 4)
+
+--        -- =========================================================================
+--        -- 3. UNCONDITIONAL JUMP TEST (JAL)
+--        -- =========================================================================
+--        11 => x"00C0006F", -- jal  x0, 12      (Unconditional jump forward)
+--        12 => x"00600313", -- addi x6, x0, 6   (SKIPPED)
+--        13 => x"00700313", -- addi x6, x0, 7   (SKIPPED)
+--        14 => x"00800313", -- addi x6, x0, 8   (x6 = 8)
+
+--        -- =========================================================================
+--        -- 4. REGISTER JUMP TEST (JALR)
+--        -- =========================================================================
+--        15 => x"04c00393", -- addi x7, x0, 76  (x7 = 76 -> targets byte address 76 / index 19)
+--        16 => x"00000000", -- nop              (Hazard padding for x7 writeback)
+--        17 => x"00038067", -- jalr x0, 0(x7)   (JALR with rd=x0; jumps to address 76)
+--        18 => x"00000000", -- nop              (JALR delay slot / masked instruction)
+--        19 => x"00900413", -- addi x8, x0, 9   (Jump destination: x8 = 9)
+--        others => (others => '0')
     );
     signal s_mem_addr: std_logic_vector(10 downto 0) := (others => '0');
     signal s_curr_instruction: std_logic_vector(31 downto 0) := (others => '0');

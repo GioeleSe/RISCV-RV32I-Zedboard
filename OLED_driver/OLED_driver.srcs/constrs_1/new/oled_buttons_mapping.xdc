@@ -1,23 +1,23 @@
 # ----------------------------------------------------------------------------
-# Clock (Onboard 100MHz Oscillator)
+# Clock (Onboard 100MHz Oscillator) - MATCHED to VHDL 'clock'
 # ----------------------------------------------------------------------------
-set_property PACKAGE_PIN Y9 [get_ports {clk}]
-create_clock -period 10.000 -name CLK -waveform {0.000 5.000} [get_ports clk]
+set_property PACKAGE_PIN Y9 [get_ports {clock}]
+create_clock -period 10.000 -name CLK -waveform {0.000 5.000} [get_ports clock]
 
 # ----------------------------------------------------------------------------
 # OLED Display (Bank 13 - 3.3V)
 # ----------------------------------------------------------------------------
-set_property PACKAGE_PIN U10  [get_ports {oled_dc}]
-set_property PACKAGE_PIN U9   [get_ports {oled_res}]
-set_property PACKAGE_PIN AB12 [get_ports {oled_sclk}]
-set_property PACKAGE_PIN AA12 [get_ports {oled_sdin}]
-set_property PACKAGE_PIN U11  [get_ports {oled_vbat}]
-set_property PACKAGE_PIN U12  [get_ports {oled_vdd}]
+set_property PACKAGE_PIN U10   [get_ports {oled_dc}]
+set_property PACKAGE_PIN U9    [get_ports {oled_res}]
+set_property PACKAGE_PIN AB12  [get_ports {oled_sclk}]
+set_property PACKAGE_PIN AA12  [get_ports {oled_sdin}]
+set_property PACKAGE_PIN U11   [get_ports {oled_vbat}]
+set_property PACKAGE_PIN U12   [get_ports {oled_vdd}]
 
 # ----------------------------------------------------------------------------
-# Reset Switch (Slide Switch SW0)
+# Reset Switch (Slide Switch SW0) - MATCHED to VHDL 'reset'
 # ----------------------------------------------------------------------------
-set_property PACKAGE_PIN F22 [get_ports {rst}]        ; # Changed back to match VHDL 'rst'
+set_property PACKAGE_PIN F22 [get_ports {reset}]       ; # Changed from rst to reset
 
 # ----------------------------------------------------------------------------
 # Directional Buttons (Bank 34 - 1.8V)

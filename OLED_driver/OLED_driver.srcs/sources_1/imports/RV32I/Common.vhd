@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 package common is
     type REG_MEMORY_T is array (0 to 31) of std_logic_vector(31 downto 0); -- 1024 bit memory definition (32x32)
-    type BRAM_T is array (0 to 614399) of std_logic_vector(7 downto 0); -- byte-addressable array of 614,400 locations (600KB)
+    type BRAM_T is array (0 to 4095) of std_logic_vector(31 downto 0); -- Word-wide BRAM array (16 KB total: 4096 words * 32 bits = 131,072 bits)
     type INST_CLASS_T is(
         INST_CLASS_R, INST_CLASS_I, INST_CLASS_S, INST_CLASS_B, INST_CLASS_U, INST_CLASS_J, INST_CLASS_NOP, INST_CLASS_ERR
     );

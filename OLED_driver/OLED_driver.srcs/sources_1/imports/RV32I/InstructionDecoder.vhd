@@ -37,7 +37,7 @@ entity InstructionDecoder is
         usage_mem: out std_logic;
         usage_writeback: out std_logic;
         reg_pc: out std_logic_vector(31 downto 0);
-        regs_dump: out REG_MEMORY_T;
+        regs_dump: out REG_MEMORY_T
     );
 end entity InstructionDecoder;
 architecture behaviour of InstructionDecoder is    

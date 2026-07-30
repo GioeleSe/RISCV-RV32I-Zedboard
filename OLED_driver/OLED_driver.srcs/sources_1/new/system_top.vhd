@@ -1,214 +1,138 @@
--- ============================================================================
--- System Top-Level: Integrates CPU Pipeline, MMIO Buttons, and OLED Controller
--- ============================================================================
-
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
-library work;
-use work.common.all;
 
 entity system_top is
-    port (
-        clock       : in  std_logic;
-        reset       : in  std_logic;
-        
-        -- Physical Push Button Inputs (mapped to button_controller inside MemoryAccess)
-        btn_up      : in  std_logic;
-        btn_down    : in  std_logic;
-        btn_left    : in  std_logic;
-        btn_right   : in  std_logic;
-        
-        -- Physical OLED Display Interface Pins
-        oled_sdin   : out std_logic;
-        oled_sclk   : out std_logic;
-        oled_dc     : out std_logic;
-        oled_res    : out std_logic;
-        oled_vbat   : out std_logic;
-        oled_vdd    : out std_logic
-    );
+port (
+    clock       : in  std_logic;
+    reset       : in  std_logic;
+    
+    -- Physical button inputs
+    btn_up      : in  std_logic;
+    btn_down    : in  std_logic;
+    btn_left    : in  std_logic;
+    btn_right   : in  std_logic;
+    
+    -- Physical OLED outputs
+    oled_sdin   : out std_logic;
+    oled_sclk   : out std_logic;
+    oled_dc     : out std_logic;
+    oled_res    : out std_logic;
+    oled_vbat   : out std_logic;
+    oled_vdd    : out std_logic
+);
 end entity system_top;
 
-architecture structural of system_top is
+architecture behavioral of system_top is
 
-    -- Pipeline & Control Signals (matching testbench architecture flow)
-    signal s_branch_misprediction : std_logic;
-    signal s_branch_offset        : std_logic_vector(31 downto 0);
-    signal s_jump_jalr_pc         : std_logic_vector(31 downto 0);
-    signal s_branch_prediction    : std_logic;
-    signal s_curr_instruction     : std_logic_vector(31 downto 0);
-    signal s_jump_jalr_value      : std_logic_vector(31 downto 0);
-    
-    signal s_next_pc_1            : std_logic_vector(31 downto 0) := (others => '0');
-    signal s_next_pc_2            : std_logic_vector(31 downto 0) := (others => '0');
-    signal s_next_pc_3            : std_logic_vector(31 downto 0) := (others => '0');
+    -- Signals for button controller output
+    -- Bit 0: Up, Bit 1: Down, Bit 2: Left, Bit 3: Right (see button_controller.vhd)
+    signal s_btn_data       : std_logic_vector(31 downto 0);
 
-    signal s_rs1_addr             : std_logic_vector(4 downto 0) := (others => '0');
-    signal s_rs1_value            : std_logic_vector(31 downto 0);
-    signal s_rs2_addr             : std_logic_vector(4 downto 0) := (others => '0');
-    signal s_rs2_value            : std_logic_vector(31 downto 0);
-    signal s_rd_addr              : std_logic_vector(4 downto 0) := (others => '0');
-    signal s_immediate            : std_logic_vector(31 downto 0);
-    signal s_instruction_class    : INST_CLASS_T;
-    signal s_ALU_OP               : ALU_OP_T;
-    signal s_MEM_OP               : MEM_OP_T;
-    signal s_MEM_OP_SIZE          : MEM_OP_SIZE_T;
-    signal s_OP_SIGN              : OP_SIGN_T;
-    signal s_BRANCH_OP_COND       : BRANCH_OP_COND_T;
-    signal s_usage_mem            : std_logic;
-    signal s_usage_writeback      : std_logic;
-    signal s_regs_dump            : REG_MEMORY_T;
+    -- Signal to drive the oled_controller command data input
+    signal s_oled_cmd_data  : std_logic_vector(31 downto 0) := (others => '0');
 
-    -- Execution Stage Outputs
-    signal s_ieout_rs1_addr_out   : std_logic_vector(4 downto 0);
-    signal s_ieout_rs1_value_out  : std_logic_vector(31 downto 0);
-    signal s_ieout_rs2_addr_out   : std_logic_vector(4 downto 0);
-    signal s_ieout_rs2_value_out  : std_logic_vector(31 downto 0);
-    signal s_ieout_rd_addr_out    : std_logic_vector(4 downto 0);
-    signal s_ieout_rd_value_out   : std_logic_vector(31 downto 0);
-    signal s_ieout_mem_addr_out   : std_logic_vector(31 downto 0);
-    signal s_ieout_MEM_OP_out     : MEM_OP_T;
-    signal s_ieout_MEM_OP_SIZE_out: MEM_OP_SIZE_T;
-    signal s_ieout_OP_SIGN_out    : OP_SIGN_T;
-    signal s_ieout_usage_mem_out  : std_logic;
-    signal s_ieout_usage_writeback_out : std_logic;
+    -- ------------------------------------------------------------------------
+    -- Persistent on-screen position of the 4x4 square.
+    -- Display is 128 columns x 32 rows (4 pages of 8 rows) -> valid top-left
+    -- corner range is x: 0..124, y: 0..28 so the 4x4 box stays fully on-screen.
+    -- Starts centered: x = (128-4)/2 = 62, y = (32-4)/2 = 14.
+    -- ------------------------------------------------------------------------
+    constant c_box_size : integer := 4;
+    constant c_x_max    : integer := 128 - c_box_size; -- 124
+    constant c_y_max    : integer := 32  - c_box_size; -- 28
+    constant c_x_center : integer := c_x_max / 2;       -- 62
+    constant c_y_center : integer := c_y_max / 2;       -- 14
 
-    -- Memory Access Stage Outputs
-    signal s_memout_pipe_writeback_enable_out : std_logic;
-    signal s_memout_pipe_writeback_addr_out   : std_logic_vector(4 downto 0);
-    signal s_memout_pipe_writeback_value_out  : std_logic_vector(31 downto 0);
-    signal s_memout_rs1_addr_out              : std_logic_vector(4 downto 0);
-    signal s_memout_rs1_value_out             : std_logic_vector(31 downto 0);
-    signal s_memout_rs2_addr_out              : std_logic_vector(4 downto 0);
-    signal s_memout_rs2_value_out             : std_logic_vector(31 downto 0);
+    signal s_pos_x : integer range 0 to c_x_max := c_x_center;
+    signal s_pos_y : integer range 0 to c_y_max := c_y_center;
 
-    -- MMIO / OLED Command Interconnect
-    signal s_oled_cmd_data                    : std_logic_vector(31 downto 0);
+    -- Movement pacing: without this the position would step at 100 MHz and
+    -- appear to teleport instantly to the edge of the screen the instant a
+    -- button is held. This divides the clock down to a human-visible rate.
+    constant c_move_period : integer := 2_000_000; -- ~20 ms @ 100 MHz -> 50 steps/sec
+    signal s_move_counter  : integer range 0 to c_move_period - 1 := 0;
+    signal s_move_tick     : std_logic := '0';
 
 begin
 
-    -- 1. Instruction Fetcher Stage
-    InstructionFetcherEntity: entity work.InstructionFetcher
-    port map(
-        clock                => clock,
-        reset                => reset,
-        enable_fetch         => '1',
-        branch_misprediction => s_branch_misprediction,
-        branch_offset        => s_branch_offset, 
-        jump_jalr_pc         => s_jump_jalr_pc, 
-        branch_prediction    => s_branch_prediction, 
-        curr_instruction     => s_curr_instruction, 
-        reg_pc               => s_next_pc_1
+    -- 1. Instantiate Button Controller
+    Inst_ButtonCtrl : entity work.button_controller
+    port map (
+        clk       => clock,
+        rst       => reset,
+        btn_up    => btn_up,
+        btn_down  => btn_down,
+        btn_left  => btn_left,
+        btn_right => btn_right,
+        btn_data  => s_btn_data
     );
 
-    -- 2. Instruction Decoder Stage
-    instructionDecoderEntity: entity work.InstructionDecoder
-    port map(
-        clock                 => clock,
-        reset                 => reset,
-        curr_instruction      => s_curr_instruction,
-        next_pc               => s_next_pc_1,
-        branch_prediction     => s_branch_prediction,
-        pipe_writeback_enable => s_memout_pipe_writeback_enable_out,
-        pipe_writeback_addr   => s_memout_pipe_writeback_addr_out,
-        pipe_writeback_value  => s_memout_pipe_writeback_value_out,
-        rs1_addr              => s_rs1_addr,
-        rs1_value             => s_rs1_value,
-        rs2_addr              => s_rs2_addr,
-        rs2_value             => s_rs2_value,
-        rd_addr               => s_rd_addr,
-        immediate             => s_immediate,
-        instruction_class     => s_instruction_class,
-        ALU_OP                => s_ALU_OP,
-        MEM_OP                => s_MEM_OP,
-        MEM_OP_SIZE           => s_MEM_OP_SIZE,
-        OP_SIGN               => s_OP_SIGN,
-        jump_jalr_value       => s_jump_jalr_value,
-        branch_misprediction  => s_branch_misprediction,
-        branch_offset         => s_branch_offset,
-        usage_mem             => s_usage_mem,
-        usage_writeback       => s_usage_writeback,
-        reg_pc                => s_next_pc_2,
-        regs_dump             => s_regs_dump
-    );
-    
-    -- 3. Instruction Execution Stage
-    instructionExecutionEntity: entity work.InstructionExecution
-    port map(
-        clock                 => clock,
-        reset                 => reset,
-        next_pc               => s_next_pc_2,
-        rs1_addr              => s_rs1_addr,
-        rs1_value             => s_rs1_value,
-        rs2_addr              => s_rs2_addr,
-        rs2_value             => s_rs2_value,
-        rd_addr               => s_rd_addr,
-        immediate             => s_immediate,
-        instruction_class     => s_instruction_class,
-        ALU_OP                => s_ALU_OP,
-        MEM_OP                => s_MEM_OP,
-        MEM_OP_SIZE           => s_MEM_OP_SIZE,
-        OP_SIGN               => s_OP_SIGN,
-        usage_mem             => s_usage_mem,
-        usage_writeback       => s_usage_writeback,
-        rs1_addr_out          => s_ieout_rs1_addr_out,
-        rs1_value_out         => s_ieout_rs1_value_out,
-        rs2_addr_out          => s_ieout_rs2_addr_out,
-        rs2_value_out         => s_ieout_rs2_value_out,
-        rd_addr_out           => s_ieout_rd_addr_out,
-        rd_value_out          => s_ieout_rd_value_out,
-        reg_pc                => s_next_pc_3,
-        mem_addr_out          => s_ieout_mem_addr_out,
-        MEM_OP_out            => s_ieout_MEM_OP_out,
-        MEM_OP_SIZE_out       => s_ieout_MEM_OP_SIZE_out,
-        OP_SIGN_out           => s_ieout_OP_SIGN_out,
-        usage_mem_out         => s_ieout_usage_mem_out,
-        usage_writeback_out   => s_ieout_usage_writeback_out
-    );
-    
-    -- 4. Memory Access Stage (Includes Button Controller & MMIO handling)
-    memoryAccessEntity: entity work.MemoryAccess
-    port map(
-        clock                     => clock,
-        reset                     => reset,
-        btn_up                    => btn_up,
-        btn_down                  => btn_down,
-        btn_left                  => btn_left,
-        btn_right                 => btn_right,
-        rs1_addr_in               => s_ieout_rs1_addr_out,
-        rs1_value_in              => s_ieout_rs1_value_out,
-        rs2_addr_in               => s_ieout_rs2_addr_out,
-        rs2_value_in              => s_ieout_rs2_value_out,
-        rd_addr_in                => s_ieout_rd_addr_out,
-        rd_value_in               => s_ieout_rd_value_out,
-        next_pc                   => s_next_pc_3,
-        usage_mem_in              => s_ieout_usage_mem_out,
-        mem_addr_in               => s_ieout_mem_addr_out,
-        MEM_OP_in                 => s_ieout_MEM_OP_out,
-        MEM_OP_SIZE_in            => s_ieout_MEM_OP_SIZE_out,
-        OP_SIGN_in                => s_ieout_OP_SIGN_out,
-        usage_writeback_in        => s_ieout_usage_writeback_out,
-        rs1_addr_out              => s_memout_rs1_addr_out,
-        rs1_value_out             => s_memout_rs1_value_out,
-        rs2_addr_out              => s_memout_rs2_addr_out,
-        rs2_value_out             => s_memout_rs2_value_out,
-        pipe_writeback_enable_out => s_memout_pipe_writeback_enable_out,   
-        pipe_writeback_addr_out   => s_memout_pipe_writeback_addr_out,
-        pipe_writeback_value_out  => s_memout_pipe_writeback_value_out
+    -- 2. Instantiate OLED Controller (Matched to your exact entity ports)
+    Inst_OledCtrl : entity work.oled_controller
+    port map (
+        clk       => clock,
+        rst       => reset,
+        cmd_data  => s_oled_cmd_data,
+        oled_sdin => oled_sdin,
+        oled_sclk => oled_sclk,
+        oled_dc   => oled_dc,
+        oled_res  => oled_res,
+        oled_vbat => oled_vbat,
+        oled_vdd  => oled_vdd
     );
 
-    -- 5. OLED Controller Integration
-    OledControllerEntity: entity work.oled_controller
-    port map(
-        clk        => clock,
-        rst        => reset,
-        cmd_data   => s_oled_cmd_data,
-        oled_sdin  => oled_sdin,
-        oled_sclk  => oled_sclk,
-        oled_dc    => oled_dc,
-        oled_res   => oled_res,
-        oled_vbat  => oled_vbat,
-        oled_vdd   => oled_vdd
-    );
+    -- 3. Movement Rate Divider
+    -- Produces a single-cycle tick at ~50 Hz so the square moves at a
+    -- readable speed instead of jumping across the screen in one frame.
+    p_move_tick : process(clock, reset)
+    begin
+        if reset = '1' then
+            s_move_counter <= 0;
+            s_move_tick    <= '0';
+        elsif rising_edge(clock) then
+            if s_move_counter = c_move_period - 1 then
+                s_move_counter <= 0;
+                s_move_tick    <= '1';
+            else
+                s_move_counter <= s_move_counter + 1;
+                s_move_tick    <= '0';
+            end if;
+        end if;
+    end process p_move_tick;
 
-end architecture structural;
+    -- 4. Position Accumulator
+    -- Holds the square's position across frames (does NOT reset it from the
+    -- button state every cycle). Starts centered, and on every move tick
+    -- nudges the position one step in whichever direction is currently held,
+    -- clamped so the box never runs off the visible screen. X and Y move
+    -- independently so diagonal presses work too.
+    p_position : process(clock, reset)
+    begin
+        if reset = '1' then
+            s_pos_x <= c_x_center;
+            s_pos_y <= c_y_center;
+        elsif rising_edge(clock) then
+            if s_move_tick = '1' then
+                if s_btn_data(2) = '1' and s_pos_x > 0 then       -- Left
+                    s_pos_x <= s_pos_x - 1;
+                elsif s_btn_data(3) = '1' and s_pos_x < c_x_max then -- Right
+                    s_pos_x <= s_pos_x + 1;
+                end if;
+
+                if s_btn_data(0) = '1' and s_pos_y > 0 then       -- Up
+                    s_pos_y <= s_pos_y - 1;
+                elsif s_btn_data(1) = '1' and s_pos_y < c_y_max then -- Down
+                    s_pos_y <= s_pos_y + 1;
+                end if;
+            end if;
+        end if;
+    end process p_position;
+
+    -- 5. Pack the persistent position into the 32-bit MMIO command word
+    -- oled_controller extracts dot_x <= cmd_data(7:0), dot_y <= cmd_data(15:8)
+    s_oled_cmd_data <= std_logic_vector(to_unsigned(0, 16)) &
+                        std_logic_vector(to_unsigned(s_pos_y, 8)) &
+                        std_logic_vector(to_unsigned(s_pos_x, 8));
+
+end architecture behavioral;
