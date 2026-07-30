@@ -1,5 +1,5 @@
 -- ============================================================================
--- OLED Controller: Top-level entity to control the onboard oled fsm
+-- OLED Controller: Top-level MMIO-integrated controller for CPU-driven graphics
 -- ============================================================================
 
 library ieee;
@@ -10,6 +10,7 @@ entity oled_controller is
     port (
         clk        : in  std_logic;
         rst        : in  std_logic;
+        cmd_data   : in  std_logic_vector(31 downto 0); -- Connected to MMIO s_oled_cmd_reg
         oled_sdin  : out std_logic;
         oled_sclk  : out std_logic;
         oled_dc    : out std_logic;
@@ -39,11 +40,15 @@ architecture behavioral of oled_controller is
         );
     end component;
 
-    component oled_example is
+    -- Replaced static example component with a dynamic user application block 
+    -- that accepts live coordinate parameters updated by the CPU via MMIO.
+    component oled_user_app is
         port (
             clk       : in  std_logic;
             rst       : in  std_logic;
             en        : in  std_logic;
+            dot_x     : in  std_logic_vector(7 downto 0);
+            dot_y     : in  std_logic_vector(7 downto 0);
             sdout     : out std_logic;
             oled_sclk : out std_logic;
             oled_dc   : out std_logic;
@@ -54,7 +59,8 @@ architecture behavioral of oled_controller is
     -- ------------------------------------------------------------------------
     -- Type & State Machine Definitions
     -- ------------------------------------------------------------------------
-    type t_states is (OLED_IDLE, OLED_INIT, OLED_TEST, OLED_DONE);
+    -- Changed from OLED_TEST/OLED_DONE to a continuous OLED_RUN interactive state
+    type t_states is (OLED_IDLE, OLED_INIT, OLED_RUN);
     signal current_state : t_states := OLED_IDLE;
 
     -- ------------------------------------------------------------------------
@@ -67,17 +73,30 @@ architecture behavioral of oled_controller is
     signal init_spi_clk  : std_logic;
     signal init_dc       : std_logic;
 
-    -- Example Block Signals
-    signal example_en      : std_logic := '0';
-    signal example_sdata   : std_logic;
-    signal example_spi_clk : std_logic;
-    signal example_dc      : std_logic;
-    signal example_done    : std_logic;
+    -- User App Block Signals
+    signal app_en        : std_logic := '0';
+    signal app_sdata     : std_logic;
+    signal app_spi_clk   : std_logic;
+    signal app_dc        : std_logic;
+    signal app_done      : std_logic;
+
+    -- Extracted CPU command fields from the 32-bit MMIO word register
+    signal dot_x         : std_logic_vector(7 downto 0);
+    signal dot_y         : std_logic_vector(7 downto 0);
 
 begin
 
     -- ------------------------------------------------------------------------
-    -- Component Instances (Using Safe Named Association Mapping)
+    -- CPU MMIO Command Mapping
+    -- ------------------------------------------------------------------------
+    -- Slice bits from the CPU's store instruction data to drive dot positions:
+    -- Lower 8 bits [7:0]   -> X coordinate
+    -- Next 8 bits [15:8]   -> Y coordinate
+    dot_x <= cmd_data(7 downto 0);
+    dot_y <= cmd_data(15 downto 8);
+
+    -- ------------------------------------------------------------------------
+    -- Component Instances
     -- ------------------------------------------------------------------------
     Initialize_Inst : oled_initializer
         port map (
@@ -93,28 +112,29 @@ begin
             fin       => init_done
         );
 
-    Example_Inst : oled_example
+    User_App_Inst : oled_user_app
         port map (
             clk       => clk,
             rst       => rst,
-            en        => example_en,
-            sdout     => example_sdata,
-            oled_sclk => example_spi_clk,
-            oled_dc   => example_dc,
-            fin       => example_done
+            en        => app_en,
+            dot_x     => dot_x,
+            dot_y     => dot_y,
+            sdout     => app_sdata,
+            oled_sclk => app_spi_clk,
+            oled_dc   => app_dc,
+            fin       => app_done
         );
 
     -- ------------------------------------------------------------------------
     -- Data & Routing Multiplexers (Combinational)
     -- ------------------------------------------------------------------------
-    -- Output routing dependent on current controller state
-    oled_sdin <= init_sdata   when (current_state = OLED_INIT) else example_sdata;
-    oled_sclk <= init_spi_clk when (current_state = OLED_INIT) else example_spi_clk;
-    oled_dc   <= init_dc      when (current_state = OLED_INIT) else example_dc;
+    oled_sdin <= init_sdata  when (current_state = OLED_INIT) else app_sdata;
+    oled_sclk <= init_spi_clk when (current_state = OLED_INIT) else app_spi_clk;
+    oled_dc   <= init_dc     when (current_state = OLED_INIT) else app_dc;
 
     -- Module Enable distribution
-    init_en    <= '1' when (current_state = OLED_INIT) else '0';
-    example_en <= '1' when (current_state = OLED_TEST) else '0';
+    init_en <= '1' when (current_state = OLED_INIT) else '0';
+    app_en  <= '1' when (current_state = OLED_RUN)  else '0';
 
     -- ------------------------------------------------------------------------
     -- Sequential State Machine Process
@@ -132,16 +152,13 @@ begin
                     
                     when OLED_INIT =>
                         if init_done = '1' then
-                            current_state <= OLED_TEST;
+                            current_state <= OLED_RUN;
                         end if;
                     
-                    when OLED_TEST =>
-                        if example_done = '1' then
-                            current_state <= OLED_DONE;
-                        end if;
-                    
-                    when OLED_DONE =>
-                        current_state <= OLED_DONE; -- Maintain final state until external reset
+                    when OLED_RUN =>
+                        -- Maintain continuous operation so the CPU can update 
+                        -- dot coordinates dynamically via MMIO store instructions
+                        current_state <= OLED_RUN;
                     
                     when others =>
                         current_state <= OLED_IDLE;
