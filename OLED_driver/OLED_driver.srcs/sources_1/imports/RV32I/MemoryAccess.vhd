@@ -36,7 +36,9 @@ port (
     rs2_value_out: out std_logic_vector(31 downto 0);
     pipe_writeback_enable_out: out std_logic;                        
     pipe_writeback_addr_out: out std_logic_vector(4 downto 0);
-    pipe_writeback_value_out: out std_logic_vector(31 downto 0)
+    pipe_writeback_value_out: out std_logic_vector(31 downto 0);
+
+    oled_cmd_reg: out std_logic_vector(31 downto 0)
 );
 end entity MemoryAccess;
 
@@ -74,6 +76,9 @@ begin
         variable v_masked_data_out  : std_logic_vector(31 downto 0);
         variable v_pipe_writeback_value : std_logic_vector(31 downto 0);
         variable w_data             : std_logic_vector(31 downto 0);
+        constant C_MMIO_BASE  : std_logic_vector(31 downto 0) := x"000F0000";
+        constant C_OFFSET_BTN : std_logic_vector(31 downto 0) := x"000F0000";
+        constant C_OFFSET_OLED: std_logic_vector(31 downto 0) := x"000F0004";
     begin
         if reset = '1' then
             s_pipe_writeback_value <= (others => '0');
@@ -88,25 +93,34 @@ begin
         elsif rising_edge(clock) then
             v_masked_data_out := (others => '0');
 
+
             if usage_mem_in = '1' then
                 -- MMIO space check
-                if unsigned(mem_addr_in) >= 16#000F0000# then
-                    case(MEM_OP_in) is
+                if unsigned(mem_addr_in) >= unsigned(C_MMIO_BASE) then
+                    case MEM_OP_in is
                         when OP_LOAD =>
+                            -- Optional safety: You can mask lower 2 bits (& "00") 
+                            -- to robustly handle unaligned word reads from software.
                             case mem_addr_in is
-                                when x"000F0000" => v_masked_data_out := s_btn_data;
-                                when x"000F0004" => v_masked_data_out := s_oled_cmd_reg;
-                                when others      => v_masked_data_out := (others => '0');
+                                when C_OFFSET_BTN  => 
+                                    v_masked_data_out := s_btn_data;
+                                when C_OFFSET_OLED => 
+                                    v_masked_data_out := s_oled_cmd_reg;
+                                when others        => 
+                                    v_masked_data_out := (others => '0'); -- Safe default for unmapped MMIO space
                             end case;
+                            
                         when OP_STORE =>
                             case mem_addr_in is
-                                when x"000F0004" => s_oled_cmd_reg <= rs2_value_in;
-                                when others      => null;
+                                when C_OFFSET_OLED => 
+                                    s_oled_cmd_reg <= rs2_value_in;
+                                when others        => 
+                                    null; -- Ignore writes to read-only regions (like buttons)
                             end case;
+                            
                         when others =>
                             null;
                     end case;
-
                 else
                     -- Regular BRAM space (Word-aligned indexing)
                     v_word_addr := to_integer(unsigned(mem_addr_in(13 downto 2)));
@@ -210,6 +224,7 @@ begin
             pipe_writeback_enable_out <= usage_writeback_in;
             pipe_writeback_addr_out <= rd_addr_in;
             pipe_writeback_value_out <= v_pipe_writeback_value;
+            oled_cmd_reg <= s_oled_cmd_reg;
         end if;
     end process;
 end behaviour;

@@ -1,5 +1,6 @@
 -- ============================================================================
 -- OLED Controller: Top-level MMIO-integrated controller for CPU-driven graphics
+-- Updated with continuous frame refresh loop
 -- ============================================================================
 
 library ieee;
@@ -40,8 +41,6 @@ architecture behavioral of oled_controller is
         );
     end component;
 
-    -- Replaced static example component with a dynamic user application block 
-    -- that accepts live coordinate parameters updated by the CPU via MMIO.
     component oled_user_app is
         port (
             clk       : in  std_logic;
@@ -59,28 +58,25 @@ architecture behavioral of oled_controller is
     -- ------------------------------------------------------------------------
     -- Type & State Machine Definitions
     -- ------------------------------------------------------------------------
-    -- Changed from OLED_TEST/OLED_DONE to a continuous OLED_RUN interactive state
-    type t_states is (OLED_IDLE, OLED_INIT, OLED_RUN);
+    type t_states is (OLED_IDLE, OLED_INIT, OLED_RUN, OLED_LOOP_RESET);
     signal current_state : t_states := OLED_IDLE;
 
     -- ------------------------------------------------------------------------
     -- Internal Interconnect Signals
     -- ------------------------------------------------------------------------
-    -- Initializer Block Signals
     signal init_en       : std_logic := '0';
     signal init_done     : std_logic;
     signal init_sdata    : std_logic;
     signal init_spi_clk  : std_logic;
     signal init_dc       : std_logic;
 
-    -- User App Block Signals
     signal app_en        : std_logic := '0';
+    signal app_en_int    : std_logic := '0';
     signal app_sdata     : std_logic;
     signal app_spi_clk   : std_logic;
     signal app_dc        : std_logic;
     signal app_done      : std_logic;
 
-    -- Extracted CPU command fields from the 32-bit MMIO word register
     signal dot_x         : std_logic_vector(7 downto 0);
     signal dot_y         : std_logic_vector(7 downto 0);
 
@@ -89,12 +85,9 @@ begin
     -- ------------------------------------------------------------------------
     -- CPU MMIO Command Mapping
     -- ------------------------------------------------------------------------
-    -- Slice bits from the CPU's store instruction data to drive dot positions:
-    -- Lower 8 bits [7:0]   -> X coordinate
-    -- Next 8 bits [15:8]   -> Y coordinate
     dot_x <= cmd_data(7 downto 0);
     dot_y <= cmd_data(15 downto 8);
-
+    
     -- ------------------------------------------------------------------------
     -- Component Instances
     -- ------------------------------------------------------------------------
@@ -134,7 +127,10 @@ begin
 
     -- Module Enable distribution
     init_en <= '1' when (current_state = OLED_INIT) else '0';
-    app_en  <= '1' when (current_state = OLED_RUN)  else '0';
+    app_en  <= app_en_int;
+
+    -- Generate a clean restart pulse for the user app every time a frame finishes
+    app_en_int <= '1' when (current_state = OLED_RUN) else '0';
 
     -- ------------------------------------------------------------------------
     -- Sequential State Machine Process
@@ -156,8 +152,11 @@ begin
                         end if;
                     
                     when OLED_RUN =>
-                        -- Maintain continuous operation so the CPU can update 
-                        -- dot coordinates dynamically via MMIO store instructions
+                        if app_done = '1' then
+                            current_state <= OLED_LOOP_RESET;
+                        end if;
+                        
+                    when OLED_LOOP_RESET =>
                         current_state <= OLED_RUN;
                     
                     when others =>

@@ -28,8 +28,27 @@ set_property PACKAGE_PIN R18 [get_ports {btn_right}]  ; # "BTNR"
 set_property PACKAGE_PIN T18 [get_ports {btn_up}]     ; # "BTNU"
 
 # ----------------------------------------------------------------------------
-# IOSTANDARD Voltage Settings
+# IOSTANDARD Voltage Settings (Explicit Port Assignments)
 # ----------------------------------------------------------------------------
-set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 13]]
-set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 34]]
-set_property IOSTANDARD LVCMOS25 [get_ports -of_objects [get_iobanks 35]]
+set_property IOSTANDARD LVCMOS33 [get_ports {clock}]
+set_property IOSTANDARD LVCMOS33 [get_ports {reset}]
+# ----------------------------------------------------------------------------
+# User LEDs - Bank 33
+# ----------------------------------------------------------------------------
+set_property PACKAGE_PIN T22 [get_ports {leds[0]}];  # "LD0" (Maps to btn_up)
+set_property PACKAGE_PIN T21 [get_ports {leds[1]}];  # "LD1" (Maps to btn_down)
+set_property PACKAGE_PIN U22 [get_ports {leds[2]}];  # "LD2" (Maps to btn_left)
+set_property PACKAGE_PIN U21 [get_ports {leds[3]}];  # "LD3" (Maps to btn_right)
+
+set_property IOSTANDARD LVCMOS33 [get_ports {leds[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {leds[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {leds[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {leds[3]}]
+
+# OLED Display Pins (Bank 13 - 3.3V)
+set_property IOSTANDARD LVCMOS33 [get_ports {oled_dc oled_res oled_sclk oled_sdin oled_vbat oled_vdd}]
+
+# Directional Buttons (Bank 34 - 1.8V)
+set_property IOSTANDARD LVCMOS18 [get_ports {btn_up btn_down btn_left btn_right}]
+
+

@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_rv32i_top_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="common" />
+            <top_module name="tb_rv32i_top" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0.000000000 ms"></ZoomStartTime>
+      <ZoomEndTime time="13.060000001 ms"></ZoomEndTime>
+      <Cursor1Time time="0.430125000 ms"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="318"></NameColumnWidth>
+      <ValueColumnWidth column_width="60"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="53" />
+   <wvobject fp_name="/tb_rv32i_top/clock" type="logic">
+      <obj_property name="ElementShortName">clock</obj_property>
+      <obj_property name="ObjectShortName">clock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/btn_up" type="logic">
+      <obj_property name="ElementShortName">btn_up</obj_property>
+      <obj_property name="ObjectShortName">btn_up</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/btn_down" type="logic">
+      <obj_property name="ElementShortName">btn_down</obj_property>
+      <obj_property name="ObjectShortName">btn_down</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/btn_left" type="logic">
+      <obj_property name="ElementShortName">btn_left</obj_property>
+      <obj_property name="ObjectShortName">btn_left</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/btn_right" type="logic">
+      <obj_property name="ElementShortName">btn_right</obj_property>
+      <obj_property name="ObjectShortName">btn_right</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/oled_cmd_reg_out" type="array">
+      <obj_property name="ElementShortName">oled_cmd_reg_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">oled_cmd_reg_out[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/CLK_PERIOD" type="other">
+      <obj_property name="ElementShortName">CLK_PERIOD</obj_property>
+      <obj_property name="ObjectShortName">CLK_PERIOD</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/clock" type="logic">
+      <obj_property name="ElementShortName">clock</obj_property>
+      <obj_property name="ObjectShortName">clock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/reset" type="logic">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/btn_up" type="logic">
+      <obj_property name="ElementShortName">btn_up</obj_property>
+      <obj_property name="ObjectShortName">btn_up</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/btn_down" type="logic">
+      <obj_property name="ElementShortName">btn_down</obj_property>
+      <obj_property name="ObjectShortName">btn_down</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/btn_left" type="logic">
+      <obj_property name="ElementShortName">btn_left</obj_property>
+      <obj_property name="ObjectShortName">btn_left</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/btn_right" type="logic">
+      <obj_property name="ElementShortName">btn_right</obj_property>
+      <obj_property name="ObjectShortName">btn_right</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/oled_cmd_reg_out" type="array">
+      <obj_property name="ElementShortName">oled_cmd_reg_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">oled_cmd_reg_out[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/Inst_MemoryAccess/s_btn_data" type="array">
+      <obj_property name="ElementShortName">s_btn_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_btn_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_curr_instruction" type="array">
+      <obj_property name="ElementShortName">s_curr_instruction[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_curr_instruction[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_if_reg_pc" type="array">
+      <obj_property name="ElementShortName">s_if_reg_pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_if_reg_pc[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_branch_prediction" type="logic">
+      <obj_property name="ElementShortName">s_branch_prediction</obj_property>
+      <obj_property name="ObjectShortName">s_branch_prediction</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_branch_misprediction" type="logic">
+      <obj_property name="ElementShortName">s_branch_misprediction</obj_property>
+      <obj_property name="ObjectShortName">s_branch_misprediction</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_branch_offset" type="array">
+      <obj_property name="ElementShortName">s_branch_offset[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_branch_offset[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_jump_jalr_value" type="array">
+      <obj_property name="ElementShortName">s_jump_jalr_value[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_jump_jalr_value[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_rs1_addr" type="array">
+      <obj_property name="ElementShortName">s_id_rs1_addr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_rs1_addr[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_rs1_value" type="array">
+      <obj_property name="ElementShortName">s_id_rs1_value[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_rs1_value[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_rs2_addr" type="array">
+      <obj_property name="ElementShortName">s_id_rs2_addr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_rs2_addr[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_rs2_value" type="array">
+      <obj_property name="ElementShortName">s_id_rs2_value[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_rs2_value[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_rd_addr" type="array">
+      <obj_property name="ElementShortName">s_id_rd_addr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_rd_addr[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_immediate" type="array">
+      <obj_property name="ElementShortName">s_id_immediate[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_immediate[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_instruction_class" type="other">
+      <obj_property name="ElementShortName">s_id_instruction_class</obj_property>
+      <obj_property name="ObjectShortName">s_id_instruction_class</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_alu_op" type="other">
+      <obj_property name="ElementShortName">s_id_alu_op</obj_property>
+      <obj_property name="ObjectShortName">s_id_alu_op</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_mem_op" type="other">
+      <obj_property name="ElementShortName">s_id_mem_op</obj_property>
+      <obj_property name="ObjectShortName">s_id_mem_op</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_mem_op_size" type="other">
+      <obj_property name="ElementShortName">s_id_mem_op_size</obj_property>
+      <obj_property name="ObjectShortName">s_id_mem_op_size</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_op_sign" type="other">
+      <obj_property name="ElementShortName">s_id_op_sign</obj_property>
+      <obj_property name="ObjectShortName">s_id_op_sign</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_usage_mem" type="logic">
+      <obj_property name="ElementShortName">s_id_usage_mem</obj_property>
+      <obj_property name="ObjectShortName">s_id_usage_mem</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_usage_writeback" type="logic">
+      <obj_property name="ElementShortName">s_id_usage_writeback</obj_property>
+      <obj_property name="ObjectShortName">s_id_usage_writeback</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_id_reg_pc" type="array">
+      <obj_property name="ElementShortName">s_id_reg_pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_id_reg_pc[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_regs_dump" type="array">
+      <obj_property name="ElementShortName">s_regs_dump[0:31][31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_regs_dump[0:31][31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_rs1_addr_out" type="array">
+      <obj_property name="ElementShortName">s_ie_rs1_addr_out[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_rs1_addr_out[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_rs1_value_out" type="array">
+      <obj_property name="ElementShortName">s_ie_rs1_value_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_rs1_value_out[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_rs2_addr_out" type="array">
+      <obj_property name="ElementShortName">s_ie_rs2_addr_out[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_rs2_addr_out[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_rs2_value_out" type="array">
+      <obj_property name="ElementShortName">s_ie_rs2_value_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_rs2_value_out[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_rd_addr_out" type="array">
+      <obj_property name="ElementShortName">s_ie_rd_addr_out[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_rd_addr_out[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_rd_value_out" type="array">
+      <obj_property name="ElementShortName">s_ie_rd_value_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_rd_value_out[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_reg_pc" type="array">
+      <obj_property name="ElementShortName">s_ie_reg_pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_reg_pc[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_mem_addr_out" type="array">
+      <obj_property name="ElementShortName">s_ie_mem_addr_out[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_ie_mem_addr_out[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_mem_op_out" type="other">
+      <obj_property name="ElementShortName">s_ie_mem_op_out</obj_property>
+      <obj_property name="ObjectShortName">s_ie_mem_op_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_mem_op_size_out" type="other">
+      <obj_property name="ElementShortName">s_ie_mem_op_size_out</obj_property>
+      <obj_property name="ObjectShortName">s_ie_mem_op_size_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_op_sign_out" type="other">
+      <obj_property name="ElementShortName">s_ie_op_sign_out</obj_property>
+      <obj_property name="ObjectShortName">s_ie_op_sign_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_usage_mem_out" type="logic">
+      <obj_property name="ElementShortName">s_ie_usage_mem_out</obj_property>
+      <obj_property name="ObjectShortName">s_ie_usage_mem_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_ie_usage_writeback_out" type="logic">
+      <obj_property name="ElementShortName">s_ie_usage_writeback_out</obj_property>
+      <obj_property name="ObjectShortName">s_ie_usage_writeback_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_wb_enable" type="logic">
+      <obj_property name="ElementShortName">s_wb_enable</obj_property>
+      <obj_property name="ObjectShortName">s_wb_enable</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_wb_addr" type="array">
+      <obj_property name="ElementShortName">s_wb_addr[4:0]</obj_property>
+      <obj_property name="ObjectShortName">s_wb_addr[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_rv32i_top/UUT/s_wb_value" type="array">
+      <obj_property name="ElementShortName">s_wb_value[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_wb_value[31:0]</obj_property>
+   </wvobject>
+</wave_config>

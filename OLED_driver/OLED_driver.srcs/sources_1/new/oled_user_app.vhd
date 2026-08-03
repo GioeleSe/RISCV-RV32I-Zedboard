@@ -67,9 +67,14 @@ architecture behavioral of oled_user_app is
     signal page_cnt : integer range 0 to 3   := 0;
 
     -- Parsed coordinate integers
-    signal box_x    : integer range 0 to 255;
-    signal box_y    : integer range 0 to 255;
+    signal box_x_raw : integer range 0 to 255;
+    signal box_y_raw : integer range 0 to 255;
 
+    constant c_box_size : integer := 4;
+    constant c_x_max    : integer := 128 - c_box_size; -- 124
+    constant c_y_max    : integer := 32  - c_box_size; -- 28
+    signal box_x : integer range 0 to c_x_max;
+    signal box_y : integer range 0 to c_y_max;
     signal pixel_byte : std_logic_vector(7 downto 0);
 
     -- SPI submodule interconnect
@@ -81,8 +86,11 @@ architecture behavioral of oled_user_app is
 
 begin
 
-    box_x <= to_integer(unsigned(dot_x));
-    box_y <= to_integer(unsigned(dot_y));
+    box_x_raw <= to_integer(unsigned(dot_x));
+    box_y_raw <= to_integer(unsigned(dot_y));
+
+    box_x <= c_x_max when box_x_raw > c_x_max else box_x_raw;
+    box_y <= c_y_max when box_y_raw > c_y_max else box_y_raw;
 
     oled_dc <= temp_dc;
     fin     <= temp_fin;

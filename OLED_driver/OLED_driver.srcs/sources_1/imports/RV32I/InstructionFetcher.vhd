@@ -20,80 +20,114 @@ end entity InstructionFetcher;
 
 architecture behaviour of InstructionFetcher is
     signal bram : BRAM_T := (
-        -- =========================================================================
-        -- HAZARD-SAFE BUTTON-TO-OLED POLLING PROGRAM (WITH DOUBLED NOPS)
-        -- =========================================================================
+    -- =========================================================================
+    -- INITIALIZATION & INITIAL OLED POSITION SETUP
+    -- =========================================================================
+    0  => x"00f00513", -- addi x10, x0, 15     (Load 15 into x10)
+    -- 4 Padding operations
+    1  => x"00000013", -- addi x0,  x0, 0      
+    2  => x"00000013", -- addi x0,  x0, 0      
+    3  => x"00000013", -- addi x0,  x0, 0      
+    4  => x"00000013", -- addi x0,  x0, 0      
+    5  => x"01051513", -- slli x10, x10, 16    (Base address 0x000F0000)
+    6  => x"04000293", -- addi x5,  x0, 64     (Initial pos_x = 64)
+    7  => x"00e00313", -- addi x6,  x0, 14     (Initial pos_y = 14)
 
-        -- Initialization Phase (Executed once at startup)
-        0  => x"000F0537", -- lui  x10, 0x000F0       (Load MMIO base address 0x000F0000 into x10)
-        1  => x"00000000", -- nop                     (Hazard padding 1)
-        2  => x"00000000", -- nop                     (Hazard padding 2 - doubled)
-        3  => x"00000613", -- addi x12, x0, 0         (Initialize old button state cache x12 to 0)
-        4  => x"00000000", -- nop                     (Hazard padding 1)
-        5  => x"00000000", -- nop                     (Hazard padding 2 - doubled)
+    -- Pack initial position into x7 and send
+    8  => x"00831393", -- slli x7,  x6, 8      
+    -- 4 Padding operations
+    9  => x"00000013", -- addi x0,  x0, 0      
+    10 => x"00000013", -- addi x0,  x0, 0      
+    11 => x"00000013", -- addi x0,  x0, 0      
+    12 => x"00000013", -- addi x0,  x0, 0      
+    13 => x"0053e3b3", -- or   x7,  x7, x5     
+    -- 4 Padding operations
+    14 => x"00000013", -- addi x0,  x0, 0      
+    15 => x"00000013", -- addi x0,  x0, 0      
+    16 => x"00000013", -- addi x0,  x0, 0      
+    17 => x"00000013", -- addi x0,  x0, 0      
+    18 => x"00752223", -- sw   x7,  4(x10)     (Store initial position at 0x000F0004)
 
-        -- Polling Loop Start
-        6  => x"00052583", -- lw   x11, 0(x10)        (Load current button state from 0x000F0000 into x11)
-        7  => x"00000000", -- nop                     (Load-use hazard padding 1)
-        8  => x"00000000", -- nop                     (Load-use hazard padding 2 - doubled)
-        
-        -- Compare current state (x11) with cached state (x12)
-        -- If equal, branch forward to index 12 to skip writing
-        9  => x"00CB0C63", -- beq  x11, x12, 12       (Branch if x11 == x12, offset = 12 bytes / 3 instructions forward)
-        10 => x"00000000", -- nop                     (Branch delay slot 1)
-        11 => x"00000000", -- nop                     (Branch delay slot 2 - doubled)
+    -- =========================================================================
+    -- BUTTON POLLING LOOP START (Index 19)
+    -- =========================================================================
+    19 => x"00052083", -- lw   x1,  0(x10)     (Load button state from 0x000F0000)
+    20 => x"00000000", -- nop                   (Load-use hazard padding 1)
+    21 => x"00000000", -- nop                   (Load-use hazard padding 2)
+    22 => x"00000000", -- nop                   (Load-use hazard padding 3)
+    23 => x"00000000", -- nop                   (Load-use hazard padding 4)
 
-        -- Buttons Changed Phase
-        12 => x"00B52223", -- sw   x11, 4(x10)        (Store new button state to OLED command reg at 0x000F0004)
-        13 => x"00058613", -- addi x12, x11, 0        (Update old state cache: copy x11 into x12)
-        14 => x"00000000", -- nop                     (Hazard padding 1)
-        15 => x"00000000", -- nop                     (Hazard padding 2 - doubled)
+    -- =========================================================================
+    -- EXTRACT BITS 0, 1, 2, 3 INTO REGISTERS
+    -- =========================================================================
+    24 => x"0010f113", -- andi x2,  x1, 1      (Up -> x2, already 0/1)
+    25 => x"0020f193", -- andi x3,  x1, 2      (Down -> x3, raw bit = 0/2)
+    26 => x"0040f213", -- andi x4,  x1, 4      (Left -> x4, raw bit = 0/4)
+    27 => x"0080f593", -- andi x11, x1, 8      (Right -> x11, raw bit = 0/8)
+    28 => x"00000013", -- nop                   (hazard padding 1)
+    29 => x"00000013", -- nop                   (hazard padding 2)
+    30 => x"00000013", -- nop                   (hazard padding 3)
+    31 => x"00000013", -- nop                   (hazard padding 4)
 
-        -- Loop Back Phase
-        16 => x"FD5FF0EF", -- jal  x0, -40            (Unconditional jump back to index 6 to continue polling)
-        17 => x"00000000", -- nop                     (JAL delay slot 1)
-        18 => x"00000000", -- nop                     (JAL delay slot 2 - doubled)
+    -- =========================================================================
+    -- NORMALIZE DOWN/LEFT/RIGHT BITS TO 0/1 (Up was already 0/1 from bit 0)
+    -- =========================================================================
+    32 => x"0011d193", -- srli x3,  x3, 1      (Down -> 0/1)
+    33 => x"00225213", -- srli x4,  x4, 2      (Left -> 0/1)
+    34 => x"0035d593", -- srli x11, x11, 3     (Right -> 0/1)
+    35 => x"00000013", -- nop                   (hazard padding 1)
+    36 => x"00000013", -- nop                   (hazard padding 2)
+    37 => x"00000013", -- nop                   (hazard padding 3)
+    38 => x"00000013", -- nop                   (hazard padding 4)
 
-        others => (others => '0')
-        
---        -- =========================================================================
---        -- 1. INITIALIZATION & DATA HAZARD PADDING
---        -- =========================================================================
---        0  => x"00500093", -- addi x1, x0, 5   (x1 = 5)
---        1  => x"00500113", -- addi x2, x0, 5   (x2 = 5)
---        2  => x"00300193", -- addi x3, x0, 3   (x3 = 3)
---        3  => x"00000000", -- nop              (Hazard padding for register writeback)
---        4  => x"00000000", -- nop              (Hazard padding for register writeback)
+    -- =========================================================================
+    -- COMPUTE DELTAS SAFELY WITH HAZARD PADDING
+    -- =========================================================================
+    39 => x"40218e33", -- sub  x28, x3, x2     (Delta Y = Down - Up)
+    40 => x"40458eb3", -- sub  x29, x11, x4    (Delta X = Right - Left)
+    41 => x"00000013", -- nop                   (Pipeline padding 1)
+    42 => x"00000013", -- nop                   (Pipeline padding 2)
+    43 => x"00000013", -- nop                   (Pipeline padding 3)
+    44 => x"00000013", -- nop                   (Pipeline padding 4)
 
---        -- =========================================================================
---        -- 2. CONDITIONAL BRANCH TESTS (BR / BEQ)
---        -- =========================================================================
---        5  => x"00208463", -- beq  x1, x2, 8   (Branch taken: 5 == 5)
---        6  => x"00100213", -- addi x4, x0, 1   (SKIPPED)
---        7  => x"00200213", -- addi x4, x0, 2   (x4 = 2)
+    -- =========================================================================
+    -- APPLY DELTAS TO Y AND X POSITIONS
+    -- =========================================================================
+    45 => x"01c30333", -- add  x6,  x6, x28    (Y = Y + Delta Y)
+    46 => x"00000013", -- nop                   (Pipeline padding 1)
+    47 => x"00000013", -- nop                   (Pipeline padding 2)
+    48 => x"00000013", -- nop                   (Pipeline padding 3)
+    49 => x"00000013", -- nop                   (Pipeline padding 4)
+    50 => x"01d282b3", -- add  x5,  x5, x29    (X = X + Delta X)
+    51 => x"00000013", -- nop                   (Pipeline padding 1)
+    52 => x"00000013", -- nop                   (Pipeline padding 2)
+    53 => x"00000013", -- nop                   (Pipeline padding 3)
+    54 => x"00000013", -- nop                   (Pipeline padding 4)
 
---        8  => x"01308463", -- beq  x1, x3, 8   (Branch NOT taken: 5 != 3, falls through)
---        9  => x"00300293", -- addi x5, x0, 3   (Intermediate step)
---        10 => x"00400293", -- addi x5, x0, 4   (x5 = 4)
+    -- =========================================================================
+    -- SEND UPDATED POSITION TO OLED CONTROLLER
+    -- =========================================================================
+    55 => x"00831393", -- slli x7,  x6, 8      
+    56 => x"00000013", -- nop                   (hazard padding 1)
+    57 => x"00000013", -- nop                   (hazard padding 2)
+    58 => x"00000013", -- nop                   (hazard padding 3)
+    59 => x"00000013", -- nop                   (hazard padding 4)
+    60 => x"0053e3b3", -- or   x7,  x7, x5     
+    61 => x"00000013", -- nop                   (hazard padding 1)
+    62 => x"00000013", -- nop                   (hazard padding 2)
+    63 => x"00000013", -- nop                   (hazard padding 3)
+    64 => x"00000013", -- nop                   (hazard padding 4)
+    65 => x"00752223", -- sw   x7,  4(x10)     (Store new position at 0x000F0004)
 
---        -- =========================================================================
---        -- 3. UNCONDITIONAL JUMP TEST (JAL)
---        -- =========================================================================
---        11 => x"00C0006F", -- jal  x0, 12      (Unconditional jump forward)
---        12 => x"00600313", -- addi x6, x0, 6   (SKIPPED)
---        13 => x"00700313", -- addi x6, x0, 7   (SKIPPED)
---        14 => x"00800313", -- addi x6, x0, 8   (x6 = 8)
+    -- =========================================================================
+    -- LOOP BACK TO POLLING START (Index 19)
+    -- =========================================================================
+    66 => x"f45ff06f", -- jal  x0, -188       (Unconditional jump back to index 19)
+    67 => x"00000013", -- nop
+    68 => x"00000013", -- nop
 
---        -- =========================================================================
---        -- 4. REGISTER JUMP TEST (JALR)
---        -- =========================================================================
---        15 => x"04c00393", -- addi x7, x0, 76  (x7 = 76 -> targets byte address 76 / index 19)
---        16 => x"00000000", -- nop              (Hazard padding for x7 writeback)
---        17 => x"00038067", -- jalr x0, 0(x7)   (JALR with rd=x0; jumps to address 76)
---        18 => x"00000000", -- nop              (JALR delay slot / masked instruction)
---        19 => x"00900413", -- addi x8, x0, 9   (Jump destination: x8 = 9)
---        others => (others => '0')
-    );
+    others => (others => '0')
+);
     signal s_mem_addr: std_logic_vector(10 downto 0) := (others => '0');
     signal s_curr_instruction: std_logic_vector(31 downto 0) := (others => '0');
     signal s_pc: std_logic_vector(31 downto 0) := (others => '0');
@@ -132,7 +166,8 @@ begin
                     when "01" =>
                         s_jump_pending <= "00";
                         v_pc_offset := std_logic_vector(signed(s_jump_jal_offset) - to_signed(4, 32));
-
+                        v_pc := s_pc;
+                        
                         -- v_pc_offset :=  (signed(s_jump_jal_offset) - unsigned(4)); -- JAL: PC += imm (-4 to get back to the jump address)
                     when "11" =>
                         s_jump_pending <= "10";
@@ -166,8 +201,7 @@ begin
                         v_pc_offset := (others => '0');
                         null;
                 end case;
-
-                v_pc := std_logic_vector(unsigned(v_pc) + unsigned(v_pc_offset));
+                v_pc := std_logic_vector(signed(v_pc) + signed(v_pc_offset));
                 v_next_pc := std_logic_vector(signed(v_pc) + to_signed(4, 32));
                 v_curr_instruction := bram(to_integer(unsigned(v_pc(12 downto 2))));
                 v_curr_opcode := v_curr_instruction(6 downto 0);
@@ -183,7 +217,7 @@ begin
                             v_curr_instruction(20) &                -- imm[11]
                             v_curr_instruction(30 downto 21) &      -- imm[10:1]
                             '0';                                    -- imm[0]
-                        s_jump_jal_offset <= std_logic_vector(resize(signed(v_curr_instruction), 32)); -- sign-extension for possible negative offsets
+                        s_jump_jal_offset <= std_logic_vector(resize(signed(v_immediate_21bits), 32)); -- FIXED: sign-extend the extracted immediate
                         s_jump_pending <= "01";
                     when "1100111" => -- JALR
                         s_jump_pending <= "11";

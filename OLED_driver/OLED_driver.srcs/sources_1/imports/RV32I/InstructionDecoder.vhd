@@ -374,14 +374,14 @@ begin
                     v_immediate_12bits    
                 ), 32));
                     
-            when INST_CLASS_B =>
+           when INST_CLASS_B =>
                 v_immediate_13bits := curr_instruction(31) &               -- imm[12]
                                         curr_instruction(7) &              -- imm[11]
                                         curr_instruction(30 downto 25) &   -- imm[10:5]
                                         curr_instruction(11 downto 8) &    -- imm[4:1]
                                         '0';                               -- imm[0]                     
                 v_immediate := std_logic_vector(resize(signed(
-                    v_immediate_12bits
+                    v_immediate_13bits
                 ), 32));
 
             when INST_CLASS_U =>
