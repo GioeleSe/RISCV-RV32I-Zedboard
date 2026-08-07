@@ -22,10 +22,10 @@ set_property PACKAGE_PIN F22 [get_ports {reset}]       ; # Changed from rst to r
 # ----------------------------------------------------------------------------
 # Directional Buttons (Bank 34 - 1.8V)
 # ----------------------------------------------------------------------------
-set_property PACKAGE_PIN R16 [get_ports {btn_down}]   ; # "BTND"
-set_property PACKAGE_PIN N15 [get_ports {btn_left}]   ; # "BTNL"
-set_property PACKAGE_PIN R18 [get_ports {btn_right}]  ; # "BTNR"
-set_property PACKAGE_PIN T18 [get_ports {btn_up}]     ; # "BTNU"
+set_property -dict { PACKAGE_PIN R16 IOSTANDARD LVCMOS18 } [get_ports {btn_down}]; # "BTND"
+set_property -dict { PACKAGE_PIN N15 IOSTANDARD LVCMOS18 } [get_ports {btn_left}]; # "BTNL"
+set_property -dict { PACKAGE_PIN R18 IOSTANDARD LVCMOS18 } [get_ports {btn_right}]; # "BTNR"
+set_property -dict { PACKAGE_PIN T18 IOSTANDARD LVCMOS18 } [get_ports {btn_up}];    # "BTNU"
 
 # ----------------------------------------------------------------------------
 # IOSTANDARD Voltage Settings (Explicit Port Assignments)

@@ -2,7 +2,7 @@
 -- Design Name:  OLED Display Initializer Sequence
 -- Original Author: Ryan Kim, Digilent Inc.
 -- Modified By:     Michael Mattioli
--- Cleaned & Structured Update
+-- Cleaned & Structured Update (With Mux Ratio Fix for 128x32)
 -- ============================================================================
 
 library ieee;
@@ -58,8 +58,8 @@ architecture behavioral of oled_initializer is
         Transition1, Transition2, Transition3, Transition4, Transition5,
         Idle, VddOn, Wait1, DispOff, ResetOn, Wait2, ResetOff,
         ChargePump1, ChargePump2, PreCharge1, PreCharge2, VbatOn, Wait3,
-        DispContrast1, DispContrast2, InvertDisp1, InvertDisp2, ComConfig1,
-        ComConfig2, DispOn, FullDisp, Done
+        DispContrast1, DispContrast2, InvertDisp1, InvertDisp2, 
+        MuxRatio1, MuxRatio2, ComConfig1, ComConfig2, DispOn, FullDisp, Done
     );
 
     signal current_state : t_states := Idle;
@@ -68,19 +68,19 @@ architecture behavioral of oled_initializer is
     -- ------------------------------------------------------------------------
     -- Internal Signal Flags
     -- ------------------------------------------------------------------------
-    signal temp_dc        : std_logic := '0';
-    signal temp_res       : std_logic := '1';
-    signal temp_vbat      : std_logic := '1';
-    signal temp_vdd       : std_logic := '1';
-    signal temp_fin       : std_logic := '0';
+    signal temp_dc         : std_logic := '0';
+    signal temp_res        : std_logic := '1';
+    signal temp_vbat       : std_logic := '1';
+    signal temp_vdd        : std_logic := '1';
+    signal temp_fin        : std_logic := '0';
 
     -- Submodule Interconnect Interfacing
-    signal temp_delay_ms  : std_logic_vector(11 downto 0) := (others => '0');
-    signal temp_delay_en  : std_logic := '0';
-    signal temp_delay_fin : std_logic;
-    signal temp_spi_en    : std_logic := '0';
-    signal temp_sdata     : std_logic_vector(7 downto 0) := (others => '0');
-    signal temp_spi_fin   : std_logic;
+    signal temp_delay_ms   : std_logic_vector(11 downto 0) := (others => '0');
+    signal temp_delay_en   : std_logic := '0';
+    signal temp_delay_fin  : std_logic;
+    signal temp_spi_en     : std_logic := '0';
+    signal temp_sdata      : std_logic_vector(7 downto 0) := (others => '0');
+    signal temp_spi_fin    : std_logic;
 
 begin
 
@@ -211,12 +211,23 @@ begin
                         current_state <= Transition1;
 
                     when InvertDisp1 =>
-                        temp_sdata    <= "10100000"; -- Command: 0xA0
+                        temp_sdata    <= "10100001"; -- Command: 0xA1
                         after_state   <= InvertDisp2;
                         current_state <= Transition1;
 
                     when InvertDisp2 =>
-                        temp_sdata    <= "11000000"; -- Command: 0xC0
+                        temp_sdata    <= "11001000"; -- Command: 0xC8
+                        after_state   <= MuxRatio1;  -- Routed to Multiplex Ratio configuration
+                        current_state <= Transition1;
+
+                    -- FIX: Added Multiplex Ratio States (0xA8 followed by 0x1F for 32 rows)
+                    when MuxRatio1 =>
+                        temp_sdata    <= "10101000"; -- Command: 0xA8 (Multiplex Ratio)
+                        after_state   <= MuxRatio2;
+                        current_state <= Transition1;
+
+                    when MuxRatio2 =>
+                        temp_sdata    <= "00011111"; -- Command: 0x1F (31 decimal -> 32 rows)
                         after_state   <= ComConfig1;
                         current_state <= Transition1;
 
@@ -226,7 +237,7 @@ begin
                         current_state <= Transition1;
 
                     when ComConfig2 =>
-                        temp_sdata    <= "00000000"; -- Command: 0x00
+                        temp_sdata    <= "00010010"; -- Command: 0x12
                         after_state   <= DispOn;
                         current_state <= Transition1;
 
@@ -254,7 +265,6 @@ begin
                     -- --------------------------------------------------------
                     -- Shared Handshake Handlers (SPI & Delay Blocks)
                     -- --------------------------------------------------------
-                    -- SPI Write Sequence Handshake
                     when Transition1 =>
                         temp_spi_en   <= '1';
                         current_state <= Transition2;
@@ -264,7 +274,6 @@ begin
                             current_state <= Transition5;
                         end if;
 
-                    -- Precise Delay Window Handshake
                     when Transition3 =>
                         temp_delay_en <= '1';
                         current_state <= Transition4;
@@ -274,7 +283,6 @@ begin
                             current_state <= Transition5;
                         end if;
 
-                    -- Signal Cleanup and Next Sequence Transition
                     when Transition5 =>
                         temp_spi_en   <= '0';
                         temp_delay_en <= '0';

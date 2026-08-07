@@ -23,7 +23,7 @@ architecture behavioral of button_controller is
 
     -- Debounce: counters that must saturate before a change is accepted.
     -- ~1ms @ 100 MHz. Increase if your buttons still bounce through this.
-    constant c_debounce_max : unsigned(16 downto 0) := to_unsigned(100_000, 17);
+    constant c_debounce_max : unsigned(16 downto 0) := to_unsigned(500_000, 17);
 
     signal up_cnt, down_cnt, left_cnt, right_cnt : unsigned(16 downto 0) := (others => '0');
     signal btn_up_db, btn_down_db, btn_left_db, btn_right_db : std_logic := '0';

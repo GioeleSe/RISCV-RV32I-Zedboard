@@ -9,12 +9,6 @@ port (
     clock: in std_logic;
     reset: in std_logic;
     
-    -- Physical button inputs
-    btn_up    : in std_logic;
-    btn_down  : in std_logic;
-    btn_left  : in std_logic;
-    btn_right : in std_logic;
-    
     rs1_addr_in: in std_logic_vector(4 downto 0);
     rs1_value_in: in std_logic_vector(31 downto 0);
     rs2_addr_in: in std_logic_vector(4 downto 0);
@@ -52,23 +46,10 @@ architecture behaviour of MemoryAccess is
     signal s_pipe_writeback_value : std_logic_vector(31 downto 0);
     signal s_masked_data_out      : std_logic_vector(31 downto 0);
     
-    constant ADDR_BTN_REG         : std_logic_vector(31 downto 0) := x"000F0000";
     constant ADDR_OLED_CMD        : std_logic_vector(31 downto 0) := x"000F0004";
     signal s_oled_cmd_reg         : std_logic_vector(31 downto 0) := (others => '0');
-    signal s_btn_data             : std_logic_vector(31 downto 0);
 
 begin
-
-    Inst_ButtonCtrl : entity work.button_controller
-    port map (
-        clk       => clock,
-        rst       => reset,
-        btn_up    => btn_up,
-        btn_down  => btn_down,
-        btn_left  => btn_left,
-        btn_right => btn_right,
-        btn_data  => s_btn_data
-    );
 
     memoryAccessControl: process(clock, reset)
         variable v_word_addr        : integer;
@@ -76,9 +57,8 @@ begin
         variable v_masked_data_out  : std_logic_vector(31 downto 0);
         variable v_pipe_writeback_value : std_logic_vector(31 downto 0);
         variable w_data             : std_logic_vector(31 downto 0);
-        constant C_MMIO_BASE  : std_logic_vector(31 downto 0) := x"000F0000";
-        constant C_OFFSET_BTN : std_logic_vector(31 downto 0) := x"000F0000";
-        constant C_OFFSET_OLED: std_logic_vector(31 downto 0) := x"000F0004";
+        constant C_MMIO_BASE        : std_logic_vector(31 downto 0) := x"000F0000";
+        constant C_OFFSET_OLED      : std_logic_vector(31 downto 0) := x"000F0004";
     begin
         if reset = '1' then
             s_pipe_writeback_value <= (others => '0');
@@ -93,21 +73,16 @@ begin
         elsif rising_edge(clock) then
             v_masked_data_out := (others => '0');
 
-
             if usage_mem_in = '1' then
                 -- MMIO space check
                 if unsigned(mem_addr_in) >= unsigned(C_MMIO_BASE) then
                     case MEM_OP_in is
                         when OP_LOAD =>
-                            -- Optional safety: You can mask lower 2 bits (& "00") 
-                            -- to robustly handle unaligned word reads from software.
                             case mem_addr_in is
-                                when C_OFFSET_BTN  => 
-                                    v_masked_data_out := s_btn_data;
                                 when C_OFFSET_OLED => 
                                     v_masked_data_out := s_oled_cmd_reg;
                                 when others        => 
-                                    v_masked_data_out := (others => '0'); -- Safe default for unmapped MMIO space
+                                    v_masked_data_out := (others => '0');
                             end case;
                             
                         when OP_STORE =>
@@ -115,7 +90,7 @@ begin
                                 when C_OFFSET_OLED => 
                                     s_oled_cmd_reg <= rs2_value_in;
                                 when others        => 
-                                    null; -- Ignore writes to read-only regions (like buttons)
+                                    null;
                             end case;
                             
                         when others =>

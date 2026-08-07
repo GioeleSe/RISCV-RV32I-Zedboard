@@ -1,21 +1,3 @@
--- ============================================================================
--- OLED User Application: Dynamic coordinate-driven square renderer
--- ============================================================================
--- FIX: The previous version drove oled_sclk <= clk directly (raw, undivided
--- 100 MHz, no start/stop framing) and drove sdout <= pixel_byte(0) (only ever
--- the LSB of the computed byte, never actually shifted out). That bypassed
--- the oled_spi block that every other module in this design (oled_initializer,
--- oled_example) correctly uses, and never sent the SSD1306 page/column
--- address commands either. The result is garbage written into the display's
--- GDDRAM -- the "random noise" on screen.
---
--- This version instantiates oled_spi (same as oled_initializer/oled_example)
--- so every byte is properly shifted out MSB-first on a correctly divided,
--- correctly framed serial clock, and it sends the Set Page / Set Column
--- Address commands before each page's pixel data, exactly like the known-
--- good oled_example.vhd reference implementation.
--- ============================================================================
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -36,9 +18,6 @@ end entity oled_user_app;
 
 architecture behavioral of oled_user_app is
 
-    -- ------------------------------------------------------------------------
-    -- SPI shifter (same block used by oled_initializer / oled_example)
-    -- ------------------------------------------------------------------------
     component oled_spi is
         port (
             clk       : in  std_logic;
@@ -51,10 +30,9 @@ architecture behavioral of oled_user_app is
         );
     end component;
 
-    -- Frame refresh state machine
     type t_app_state is (
         APP_IDLE,
-        ClearDC, SetPageCmd, PageNumCmd, ColLowCmd, ColHighCmd, SetDataMode,
+        ClearDC, SetPageCmd, ColLowCmd, ColHighCmd, SetDataMode,
         SendPixel, NextCol,
         APP_DONE,
         Transition1, Transition2, Transition5
@@ -62,22 +40,25 @@ architecture behavioral of oled_user_app is
     signal state       : t_app_state := APP_IDLE;
     signal after_state : t_app_state := APP_IDLE;
 
-    -- Screen traversal counters for 128x32 display (128 columns, 4 vertical pages of 8 bits)
     signal col_cnt  : integer range 0 to 127 := 0;
     signal page_cnt : integer range 0 to 3   := 0;
 
-    -- Parsed coordinate integers
     signal box_x_raw : integer range 0 to 255;
     signal box_y_raw : integer range 0 to 255;
 
     constant c_box_size : integer := 4;
     constant c_x_max    : integer := 128 - c_box_size; -- 124
     constant c_y_max    : integer := 32  - c_box_size; -- 28
-    signal box_x : integer range 0 to c_x_max;
-    signal box_y : integer range 0 to c_y_max;
+
+    signal box_x : integer range 0 to c_x_max := 0;
+    signal box_y : integer range 0 to c_y_max := 0;
+
     signal pixel_byte : std_logic_vector(7 downto 0);
 
-    -- SPI submodule interconnect
+    -- New coordinates arrive continuously (one per animation frame from CPU);
+    -- request a refresh any time they differ from what's currently drawn.
+    signal refresh_req : std_logic := '0';
+
     signal temp_dc      : std_logic := '0';
     signal temp_fin     : std_logic := '0';
     signal temp_spi_en  : std_logic := '0';
@@ -89,15 +70,9 @@ begin
     box_x_raw <= to_integer(unsigned(dot_x));
     box_y_raw <= to_integer(unsigned(dot_y));
 
-    box_x <= c_x_max when box_x_raw > c_x_max else box_x_raw;
-    box_y <= c_y_max when box_y_raw > c_y_max else box_y_raw;
-
     oled_dc <= temp_dc;
     fin     <= temp_fin;
 
-    -- ------------------------------------------------------------------------
-    -- SPI shifter instance: does all the real serial clocking/framing
-    -- ------------------------------------------------------------------------
     oled_spi_comp : oled_spi
         port map (
             clk       => clk,
@@ -109,22 +84,26 @@ begin
             fin       => temp_spi_fin
         );
 
-    -- ========================================================================
-    -- Pixel Mapping Logic (4x4 Block Generation)
-    -- ========================================================================
-    -- The SSD1306 organizes data into 8-pixel vertical pages. This process 
-    -- computes whether the current column and page intersect with the user's square.
+    -- Combinational: is a redraw needed against the currently displayed box?
+    process(box_x_raw, box_y_raw, box_x, box_y)
+    begin
+        if ((box_x_raw <= c_x_max) and (box_x /= box_x_raw)) or
+           ((box_y_raw <= c_y_max) and (box_y /= box_y_raw)) then
+            refresh_req <= '1';
+        else
+            refresh_req <= '0';
+        end if;
+    end process;
+
     process(col_cnt, page_cnt, box_x, box_y)
         variable v_byte : std_logic_vector(7 downto 0);
         variable v_row  : integer;
     begin
         v_byte := (others => '0');
 
-        -- Check if current column falls within the horizontal bounds of the square
         if (col_cnt >= box_x) and (col_cnt < box_x + 4) then
             for r in 0 to 3 loop
                 v_row := box_y + r;
-                -- Check if the row matches the vertical stripe of the active page
                 if (v_row >= page_cnt * 8) and (v_row < (page_cnt + 1) * 8) then
                     v_byte(v_row mod 8) := '1';
                 end if;
@@ -134,12 +113,6 @@ begin
         pixel_byte <= v_byte;
     end process;
 
-    -- ========================================================================
-    -- Frame Refresh Control FSM
-    -- ========================================================================
-    -- For each of the 4 pages: send the Set Page Address / Set Column Address
-    -- command sequence (identical to oled_example.vhd), then stream 128 data
-    -- bytes (one per column) through oled_spi.
     p_refresh : process(clk)
     begin
         if rising_edge(clk) then
@@ -151,50 +124,57 @@ begin
                 temp_fin    <= '0';
                 temp_dc     <= '0';
                 temp_spi_en <= '0';
+                box_x       <= 0;
+                box_y       <= 0;
             else
                 case state is
                     when APP_IDLE =>
                         temp_fin <= '0';
                         if en = '1' then
+                            if box_x_raw > c_x_max then
+                                box_x <= c_x_max;
+                            else
+                                box_x <= box_x_raw;
+                            end if;
+
+                            if box_y_raw > c_y_max then
+                                box_y <= c_y_max;
+                            else
+                                box_y <= box_y_raw;
+                            end if;
+
                             page_cnt <= 0;
                             state    <= ClearDC;
                         end if;
 
-                    -- ----------------------------------------------------------
-                    -- Page/Column address command sequence (command mode)
-                    -- ----------------------------------------------------------
                     when ClearDC =>
                         temp_dc <= '0';
                         state   <= SetPageCmd;
 
                     when SetPageCmd =>
-                        temp_sdata  <= "00100010"; -- 0x22: Set Page Start Address
-                        after_state <= PageNumCmd;
-                        state       <= Transition1;
-
-                    when PageNumCmd =>
-                        temp_sdata  <= "000000" & std_logic_vector(to_unsigned(page_cnt, 2));
+                        -- Page Addressing Mode (SSD1306 power-on default, never changed
+                        -- by the initializer): "Set Page Start Address" is the single-byte
+                        -- command 0xB0 | page, NOT the two-byte 0x22 (that command only
+                        -- applies in Horizontal/Vertical addressing mode).
+                        temp_sdata  <= "1011" & "0" & std_logic_vector(to_unsigned(page_cnt, 3));
                         after_state <= ColLowCmd;
                         state       <= Transition1;
 
                     when ColLowCmd =>
-                        temp_sdata  <= "00000000"; -- Column low nibble = 0
+                        temp_sdata  <= "00000000";
                         after_state <= ColHighCmd;
                         state       <= Transition1;
 
                     when ColHighCmd =>
-                        temp_sdata  <= "00010000"; -- Column high nibble = 0
+                        temp_sdata  <= "00010000";
                         after_state <= SetDataMode;
                         state       <= Transition1;
 
                     when SetDataMode =>
-                        temp_dc <= '1';            -- Switch to data mode
+                        temp_dc <= '1';
                         col_cnt <= 0;
                         state   <= SendPixel;
 
-                    -- ----------------------------------------------------------
-                    -- Pixel data streaming (data mode) - one byte per column
-                    -- ----------------------------------------------------------
                     when SendPixel =>
                         temp_sdata  <= pixel_byte;
                         after_state <= NextCol;
@@ -213,11 +193,8 @@ begin
 
                     when APP_DONE =>
                         temp_fin <= '1';
-                        state    <= APP_IDLE; -- Loops continuously to update position live
+                        state    <= APP_IDLE;
 
-                    -- ----------------------------------------------------------
-                    -- Shared SPI handshake (identical pattern to oled_initializer)
-                    -- ----------------------------------------------------------
                     when Transition1 =>
                         temp_spi_en <= '1';
                         state       <= Transition2;

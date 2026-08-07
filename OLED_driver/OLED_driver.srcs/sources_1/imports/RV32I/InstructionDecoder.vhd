@@ -100,7 +100,7 @@ begin
         regs => regs_dump
     );
 
-    decodeInstruction:process(curr_instruction)
+    decodeInstruction:process(curr_instruction, s_mem_out_rs1_value, s_mem_out_rs2_value, branch_prediction)
         variable v_opcode: std_logic_vector(6 downto 0);      
         variable v_funct3: std_logic_vector(2 downto 0) := (others => '0');
         variable v_funct7: std_logic_vector(6 downto 0) := (others => '0');
@@ -476,18 +476,18 @@ begin
                     v_usage_mem := '0';
                     v_usage_writeback := '0';
                 elsif v_branch_taken = '1' and branch_prediction = '0' then
-                    -- simply send back the immediate value as pc offset (-4 for rollback to the branch_instruction NEXT_PC)
+                    -- Branch was taken, but predicted not taken (target is PC + immediate, currently at PC + 4)
                     v_branch_offset := std_logic_vector(resize(signed(std_logic_vector(signed(v_immediate)-to_signed(4, 32))), 32));
                 elsif v_branch_taken = '0' and branch_prediction = '1' then
-                    -- rollback to the previous instruction (just an opposite signed immediate value)
-                    v_branch_offset := std_logic_vector(resize(-signed(v_immediate), 32));
+                    -- Branch was NOT taken, but predicted taken (target is PC + 4, currently at PC + immediate)
+                    v_branch_offset := std_logic_vector(resize(to_signed(4, 32) - signed(v_immediate), 32));
                 end if;
             when OP_JAL =>
                 -- nothing to do in this stage (already done in IF)
                 -- the IE stage will set the writeback signals (as JAL: rd = next_pc)
                 null;
             when OP_JALR =>
-                v_jump_jalr_value := AdderFunction(SIGNED_SIGNED, s_mem_out_rs1_value, immediate);
+                v_jump_jalr_value := AdderFunction(SIGNED_SIGNED, s_mem_out_rs1_value, v_immediate);
                 v_jump_jalr_value(1 downto 0) := (others => '0');
             when others => 
                 null;

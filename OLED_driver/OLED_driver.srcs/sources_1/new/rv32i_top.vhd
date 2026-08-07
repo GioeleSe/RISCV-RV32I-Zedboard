@@ -9,12 +9,6 @@ entity rv32i_top is
         clock                 : in std_logic;
         reset                 : in std_logic;
 
-        -- Memory-mapped button inputs (MMIO read at 0x000F0000)
-        btn_up                : in std_logic := '0';
-        btn_down              : in std_logic := '0';
-        btn_left              : in std_logic := '0';
-        btn_right             : in std_logic := '0';
-
         -- Memory-mapped OLED command register (MMIO write/read at 0x000F0004)
         oled_cmd_reg_out      : out std_logic_vector(31 downto 0)
     );
@@ -111,10 +105,6 @@ architecture structural of rv32i_top is
     port (
         clock: in std_logic;
         reset: in std_logic;
-        btn_up    : in std_logic;
-        btn_down  : in std_logic;
-        btn_left  : in std_logic;
-        btn_right : in std_logic;
         
         rs1_addr_in: in std_logic_vector(4 downto 0);
         rs1_value_in: in std_logic_vector(31 downto 0);
@@ -266,10 +256,6 @@ begin
     port map (
         clock                     => clock,
         reset                     => reset,
-        btn_up                    => btn_up,
-        btn_down                  => btn_down,
-        btn_left                  => btn_left,
-        btn_right                 => btn_right,
         rs1_addr_in               => s_ie_rs1_addr_out,
         rs1_value_in              => s_ie_rs1_value_out,
         rs2_addr_in               => s_ie_rs2_addr_out,
